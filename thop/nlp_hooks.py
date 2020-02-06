@@ -9,8 +9,8 @@ C_prev: num_layers X batch X hidden_size
 
 
 def count_lstm(m: nn.LSTM, x, y):
-    if m.num_layers > 1 or m.bidirectional:
-        raise NotImplementedError("")
+    # if m.num_layers > 1 or m.bidirectional:
+    #     raise NotImplementedError("")
 
     hidden_size = m.hidden_size
     input_size = m.input_size
@@ -45,7 +45,11 @@ def count_lstm(m: nn.LSTM, x, y):
     '''
     muls += hidden_size * 2
 
+    muls *= m.num_layers
+
     m.total_ops += muls
+
+    m.num_neurons = m.num_layers * hidden_size
 
 
 if __name__ == '__main__':

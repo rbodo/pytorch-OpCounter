@@ -25,6 +25,7 @@ def count_convNd(m: _ConvNd, x: (torch.Tensor,), y: torch.Tensor):
     total_ops = y.nelement() * (m.in_channels // m.groups * kernel_ops + bias_ops)
 
     m.total_ops += torch.Tensor([int(total_ops)])
+    m.num_neurons = int(y.numel() / y.size()[0])
 
 
 def count_convNd_ver2(m: _ConvNd, x: (torch.Tensor,), y: torch.Tensor):
@@ -39,6 +40,7 @@ def count_convNd_ver2(m: _ConvNd, x: (torch.Tensor,), y: torch.Tensor):
         kernel_ops += + m.bias.nelement()
     # x N x H x W x Cout x (Cin x Kw x Kh + bias)
     m.total_ops += torch.Tensor([int(output_size * kernel_ops)])
+    m.num_neurons = int(y.numel() / y.size()[0])
 
 
 def count_bn(m, x, y):
@@ -122,6 +124,7 @@ def count_upsample(m, x, y):
         total_ops = y.nelement() * (13 * 2 + 5)
 
     m.total_ops += torch.Tensor([int(total_ops)])
+    m.num_neurons = int(y.numel() / y.size()[0])
 
 
 def count_linear(m, x, y):
@@ -133,3 +136,4 @@ def count_linear(m, x, y):
     total_ops = (total_mul + total_add) * num_elements
 
     m.total_ops += torch.Tensor([int(total_ops)])
+    m.num_neurons = int(y.numel() / y.size()[0])

@@ -8,6 +8,8 @@ import warnings
 from distutils.version import LooseVersion
 
 from .count_hooks import *
+from .nlp_hooks import count_lstm
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -52,7 +54,9 @@ register_hooks = {
 
     nn.Upsample: count_upsample,
     nn.UpsamplingBilinear2d: count_upsample,
-    nn.UpsamplingNearest2d: count_upsample
+    nn.UpsamplingNearest2d: count_upsample,
+
+    nn.LSTM: count_lstm
 }
 
 
@@ -101,14 +105,27 @@ def profile(model, inputs, custom_ops=None, verbose=True):
 
     total_ops = 0
     total_params = 0
+    total_neurons = 0
+    ops_per_layer = {}
+    params_per_layer = {}
+    num_neurons_per_layer = {}
+    # names = list(dict(model.features.named_children()).keys())
     for m in model.modules():
         if len(list(m.children())) > 0:  # skip for non-leaf module
             continue
-        total_ops += m.total_ops
-        total_params += m.total_params
+        name = m._get_name() + str(hash(m))
+        ops = m.total_ops
+        params = m.total_params
+        neurons = m.num_neurons if hasattr(m, 'num_neurons') else 0
+        total_ops += ops
+        total_params += params
+        total_neurons += neurons
+        ops_per_layer[name] = int(ops.item())
+        params_per_layer[name] = int(params.item())
+        num_neurons_per_layer[name] = neurons
 
-    total_ops = total_ops.item()
-    total_params = total_params.item()
+    total_ops = int(total_ops.item())
+    total_params = int(total_params.item())
 
     # reset model to original status
     model.train(training)
@@ -124,7 +141,7 @@ def profile(model, inputs, custom_ops=None, verbose=True):
         if "total_params" in m._buffers:
             m._buffers.pop("total_params")
 
-    return total_ops, total_params
+    return total_ops, total_params, total_neurons, ops_per_layer, params_per_layer, num_neurons_per_layer
 
 
 def profile_2(model: nn.Module, inputs, custom_ops=None, verbose=True):
